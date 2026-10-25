@@ -12,7 +12,11 @@ from tqdm import tqdm
 
 
 def relabel_cells(array, with_labels):
-    """Relabel an segmentation mask with labels from another one."""
+    """Transfer tracking identities onto a segmentation mask.
+
+    Each connected component in ``array`` receives the most frequent
+    non-background identity found at the same pixels in ``with_labels``.
+    """
     relabeled = np.zeros_like(array)
     for region in regionprops(array):
         if region.label == 0:
@@ -30,7 +34,7 @@ def relabel_cells(array, with_labels):
 
 
 def relabel_video(seg_video_path, tra_video_path, output_path):
-    """Relabel a segmentation video with labels from a tra video."""
+    """Relabel every frame of a segmentation video using tracking labels."""
     err_seg_path_list = sorted(f for f in seg_video_path.iterdir() if f.suffix == ".tif")
     tra_path_list = sorted(f for f in tra_video_path.iterdir() if f.suffix == ".tif")
     for idx in tqdm(range(len(err_seg_path_list)), desc="Relabeling video..."):
@@ -59,6 +63,7 @@ def mask_to_gaussian(segmentation, sigma_scale=0.25):
 
 
 def cellpose(video_path):
+    """Create binary Cellpose segmentations for every frame in a video."""
 
     output_path = Path(video_path).parent / "CELLPOSE_SEG"
 
@@ -80,7 +85,9 @@ def cellpose(video_path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train VoxelMorph")
+    parser = argparse.ArgumentParser(
+        description="Prepare microscopy segmentations for RASOR training."
+    )
     parser.add_argument(
         "--dataset",
         default="BF-C2DL-MuSC",

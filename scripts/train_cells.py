@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Script to train TransFlowSeg and other models.
+"""Train RASOR, VoxelMorph, and related registration models.
 
 Adapted from :
 VoxelMorph: A Learning Framework for Deformable Medical Image Registration G. Balakrishnan, A.
@@ -30,9 +30,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Local imports
-from deepfluxoptique.dataset import VxmMultipleVideoDataset, VxmVideoDataset
-from deepfluxoptique.model import WarperVxm
-from deepfluxoptique.my_utils import configs, image_utils, spatial_transform
+from rasor.dataset import VxmMultipleVideoDataset, VxmVideoDataset
+from rasor.model import WarperVxm
+from rasor.my_utils import configs, image_utils, spatial_transform
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -204,7 +204,7 @@ def train_epoch(  # noqa: PLR0913, PLR0917
                     loss += loss_weights[3] * background_loss
                     epoch_background_loss += background_loss.item()
             # ------------------------------------------- FLOW SEG ---------------------------------------------------
-            # If model_type = flowseg, the segmentation map is computed as well
+            # RASOR-CNN and RASOR also predict a segmentation map.
             # Add the corresponding loss
             if "source_segmentation" in res:
                 seg_loss = 0.0
@@ -463,7 +463,7 @@ def train(args):  # noqa: C901, PLR0912, PLR0915
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train VoxelMorph")
+    parser = argparse.ArgumentParser(description="Train")
     parser.add_argument("--mlflow", action="store_true", help="Enable mlflow tracking during training")
     parser.add_argument("--workers", type=int, default=4, help="Number of workers")
     # Directory and paths
@@ -503,8 +503,8 @@ if __name__ == "__main__":
         "--model_type",
         type=str,
         default="voxelmorph",
-        choices=["voxelmorph", "twoflows", "flowseg", "transflowseg", "transmorph2d"],
-        help="Type of model to train : voxelmorph, twoflows flowseg",
+        choices=["voxelmorph", "twoflows", "rasor-cnn", "rasor", "transmorph2d", "flowseg", "transflowseg"],
+        help="Registration backbone to train. Use 'rasor-cnn' or 'rasor' for the RASOR models.",
     )
     parser.add_argument("--epochs", type=int, default=30, help="Number of epochs")
     parser.add_argument("--batch-size", type=int, default=4, help="Batch size")

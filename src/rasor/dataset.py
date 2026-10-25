@@ -11,10 +11,10 @@ from torch.utils.data import Dataset
 from torchvision.transforms import v2
 
 # Local imports
-from deepfluxoptique.my_utils.configs import (
+from rasor.my_utils.configs import (
     SHAPE,
 )
-from deepfluxoptique.my_utils.image_utils import interpole_and_pad, interpole_and_pad_mask
+from rasor.my_utils.image_utils import interpole_and_pad, interpole_and_pad_mask
 
 
 class NormalizeMinMax(nn.Module):

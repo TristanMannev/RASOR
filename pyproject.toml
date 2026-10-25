@@ -3,12 +3,12 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deepfluxoptique"
+name = "RASOR"
 version = "0.0.1"
 authors = [
     {name = "Leslie Murat"}
 ]
-description = "Deep flux optique"
+description = "RASOR: deep-learning models for optical-flow-based cell registration and segmentation."
 readme = "README.md"
 license = { file = "LICENSE"}
 

@@ -1,106 +1,114 @@
-# Deep flux optique
+# 🪒 RASOR 
+=============================
+
+### Image Registration via Auxiliary Segmentation and Optical Flow Regularization
+
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red)
+![PyTorch Lightning](https://img.shields.io/badge/Lightning-2.x-purple)
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Research%20Code-orange)
+
+RASOR is a Python library for deep-learning-based optical-flow registration
+and cell segmentation in microscopy time series. It provides:
+
+- **RASOR-CNN**, a convolutional U-Net with registration and segmentation
+  decoders.
+- **RASOR**, a Swin Transformer-based model with the same joint outputs.
+- **VoxelMorph** and **TransMorph2D** backbones for registration-only
+  experiments.
+
+The models accept a source/target image pair and return a displacement field.
+RASOR-CNN and RASOR additionally return segmentation logits.
 
 ## 📦 Installation
 
-### Install from repo
+Install the published package: (Not yet available)
 
-```bash 
-git clone https://github.com/Lesliemrt/Deep-flux-optique.git
-cd Deep-flux-optique
-pip install .
-
+```bash
+pip install RASOR
 ```
 
-* * *
+Install the repository in editable mode for development:
 
-
-## 👩🏻‍💻 Reproduce 
-
-### Data
-
-The pipeline was originaly created for Cell Tracking Challenge's data.
-The names of the files or folders can be different but it must follow this structure : 
-
+```bash
+git clone https://github.com/bia-pasteur/RASOR.git
+cd RASOR
+pip install -e .
 ```
+
+## Python API
+
+```python
+import torch
+from rasor import WarperVxm
+
+model = WarperVxm(
+    ndim=2,
+    source_channels=1,
+    target_channels=1,
+    model_type="rasor-cnn",  # or "rasor", "voxelmorph", "transmorph2d"
+)
+
+source = torch.randn(1, 1, 256, 256)
+target = torch.randn(1, 1, 256, 256)
+outputs = model(source, target, return_warped_source=True)
+displacement = outputs["displacement"]
+segmentation = outputs["source_segmentation"]
+```
+
+The public model classes are `rasor.RASORCNNUNet`, `rasor.RASORUNet`,
+`rasor.TransMorph2D`, and `rasor.WarperVxm`. The former model identifiers
+`flowseg` and `transflowseg` remain accepted as compatibility aliases, but
+new experiments should use `rasor-cnn` and `rasor`.
+
+## 🔬 Reproducing the microscopy pipeline
+
+The example pipeline was developed with Cell Tracking Challenge data. Input
+videos and masks should follow this structure:
+
+```text
 data/
-├── data1/
-│   ├── train_data/
-│   │   ├── t000.tiff
-│   │   ├── t001.tiff
-│   │   └── ...
-│   ├── seg_train_data/
-│   │   ├── mask000.tiff
-│   │   ├── mask001.tiff
-│   │   └── ...
-│   ├── test_data/
-│   │   ├── t000.tiff
-│   │   ├── t001.tiff
-│   │   └── ...
-│   ├── seg_test_data/
-│   │   ├── mask000.tiff
-│   │   ├── mask001.tiff
-│   │   └── ...
-├── data2/
-│   ├── train_data/
-│   ├── seg_train_data/
-│   ├── test_data/
-│   └── seg_test_data/
-├── data3/
-...
-
+└── data1/
+    ├── train_data/
+    ├── seg_train_data/
+    ├── test_data/
+    └── seg_test_data/
 ```
 
-To evaluate the models, the segmentations given must have label consistent in time (tracking labels).
+To create temporally consistent labels from CTC tracking data:
 
-### Data preprocessing
-
-``` bash
-# To create label consistent in time from CTC data
-# This will create a folder data/data1/02_ERR_SEG_TRA by combining the masks from data/data1/02_ERR_SEG and the labels from data/data1/02_GT/TRA.
+```bash
 python scripts/datapreprocessing.py --relabel --dataset data1
+```
 
-# To create segmentations with cellpose for training
-# This will create a folder data/data1/CELLPOSE_SEG by segmenting data/data1/01.
+To generate training masks with Cellpose:
+
+```bash
 python scripts/datapreprocessing.py --cellpose --dataset data1
 ```
 
-To use these commands, your data must follow this structure : 
+Train a model with:
 
-```
-data/
-├── data1/
-│   ├── 01/
-│   ├── 01_ERR_SEG/
-│   ├── 01_GT/TRA
-│   ├── 02/
-│   ├── 02_ERR_SEG/
-│   ├── 02_GT/TRA
-├── data2/
-...
-
+```bash
+python scripts/train_cells.py \
+  --video-path data/data1/train_data \
+  --seg-path data/data1/seg_train_data \
+  --model_type rasor-cnn
 ```
 
-### Training 
+Evaluate a trained model with:
 
-To train a model use : 
-
-``` bash
-python scripts/train_cells.py --video-path root_data_folder/data1/train_data --seg-path root_data_folder/data1/seg_train_data
+```bash
+python scripts/tests.py \
+  --video-path data/data1/test_data \
+  --seg-path data/data1/seg_test_data \
+  --output_dir outputs/rasor-cnn/checkpoint \
+  --model_type rasor-cnn
 ```
 
-You can specify the model that you want to train using the --model_type argument, for example : 
+## 📜 Citation
 
-``` bash
-python scripts/train_cells.py --model_type flowseg
-```
-
-### Inference
-
-To test a model use the command below, *output_dir* being the folder created when training a model.
-
-``` bash
-python scripts/tests.py --video-path root_data_folder/data1/test_data --seg-path root_data_folder/data1/seg_test_data --output_dir outputs/transflowseg/output_20260728_084107 --model_type transflowseg
-```
-
-
-
+When using RASOR in published work, please cite the accompanying paper and
+the upstream VoxelMorph and TransMorph papers relevant to the selected
+backbone.

@@ -26,7 +26,6 @@ cycler==0.12.1
 databricks-sdk==0.110.0
 debugpy @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_debugpy_1769744980/work
 decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1740384970518/work
--e git+https://github.com/Lesliemrt/Deep-flux-optique.git@65d89ea65a4461ddd4c0dcdee0e6368789a457d9#egg=deepfluxoptique
 docker==7.1.0
 docopt==0.6.2
 docutils==0.23

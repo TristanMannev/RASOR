@@ -7,7 +7,7 @@ import tifffile as tiff
 from skimage.measure import find_contours, regionprops
 from torch import nn
 
-from deepfluxoptique.my_utils.flow_viz import flow_to_image
+from rasor.my_utils.flow_viz import flow_to_image
 
 
 def normalisation_params(frames_path_list):

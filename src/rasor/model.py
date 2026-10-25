@@ -8,8 +8,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from deepfluxoptique.model_transformer import TransFlowSegUNet, TransMorph2D
-from deepfluxoptique.my_utils import spatial_transform
+from rasor.model_transformer import RASORUNet, TransMorph2D
+from rasor.my_utils import spatial_transform
 
 
 class ConvBlock(nn.Module):
@@ -265,8 +265,8 @@ class TwoFlowsUNet(nn.Module):
         return feature_tensor_fwd, feature_tensor_bwd
 
 
-class FlowSegUNet(nn.Module):
-    """FlowSegUNet with two decoders one for flow and one for segmentation."""
+class RASORCNNUNet(nn.Module):
+    """Convolutional RASOR backbone with registration and segmentation decoders."""
 
     def __init__(
         self,
@@ -282,7 +282,7 @@ class FlowSegUNet(nn.Module):
             256,
         ),
     ):
-        """Initialize `FlowSegUNet`.
+        """Initialize the RASOR-CNN U-Net.
 
         Parameters
         ----------
@@ -365,7 +365,7 @@ class FlowSegUNet(nn.Module):
         )
 
     def forward(self, feature_tensor: torch.Tensor) -> tuple[Any, Any]:
-        """Forward pass through the `FlowSegUNet` model."""
+        """Predict a displacement field and segmentation logits."""
         skip_connections = []
 
         # -------------------------- Downsampling path ----------------------------------------
@@ -398,6 +398,10 @@ class FlowSegUNet(nn.Module):
         return feature_tensor_fwd, feature_tensor_seg
 
 
+# Retain import compatibility for models trained with the former name.
+FlowSegUNet = RASORCNNUNet
+
+
 class WarperVxm(nn.Module):
     """A warper architecture to perform 2D or 3D image registration using a flow field.
 
@@ -418,7 +422,8 @@ class WarperVxm(nn.Module):
         List of integers specifying the number of features in each
         level of the UNet architecture. Default is `[16, 16, 16, 16, 16]`.
     model_type : str
-        Model to use, choices are "voxelmorph", "flowseg", "transflowseg", "transmorph2d". Default is "voxelmorph".
+        Backbone to use. Supported names are ``"voxelmorph"``, ``"twoflows"``,
+        ``"rasor-cnn"``, ``"rasor"``, and ``"transmorph2d"``.
     flow_initializer : float, optional
         Standard deviation for initializing the flow layer weights with a
         normal distribution (mean=0). Default is `1e-5`.
@@ -463,7 +468,8 @@ class WarperVxm(nn.Module):
             Number of features at each level of the unet. Must be a list of
             positive integers.
         model_type : str
-            Model to use, choices are "voxelmorph", "flowseg", "transflowseg", "transmorph2d".
+            Backbone name. The legacy names ``"flowseg"`` and ``"transflowseg"``
+            remain accepted as aliases for ``"rasor-cnn"`` and ``"rasor"``.
         flow_initializer : float, optional
             Standard deviation for initializing the flow layer weights with a
             normal distribution (mean=0). Default is `1e-5`.
@@ -474,7 +480,8 @@ class WarperVxm(nn.Module):
 
         self.device = device
 
-        self.model_type = model_type
+        model_type_aliases = {"flowseg": "rasor-cnn", "transflowseg": "rasor"}
+        self.model_type = model_type_aliases.get(model_type, model_type)
 
         if self.model_type == "twoflows":
             self.model = TwoFlowsUNet(
@@ -483,8 +490,8 @@ class WarperVxm(nn.Module):
                 out_channels=ndim,
                 nb_features=nb_features,
             ).to(self.device)
-        elif self.model_type == "flowseg":
-            self.model = FlowSegUNet(
+        elif self.model_type == "rasor-cnn":
+            self.model = RASORCNNUNet(
                 ndim=ndim,
                 in_channels=(source_channels + target_channels),
                 out_channels=ndim,
@@ -499,8 +506,8 @@ class WarperVxm(nn.Module):
                 activations=nn.ReLU,
                 final_activation=None,
             ).to(self.device)
-        elif self.model_type == "transflowseg":
-            self.model = TransFlowSegUNet(
+        elif self.model_type == "rasor":
+            self.model = RASORUNet(
                 ndim=ndim,
                 in_channels=(source_channels + target_channels),
                 out_channels=ndim,
@@ -556,7 +563,7 @@ class WarperVxm(nn.Module):
         elif self.model_type == "voxelmorph":
             unet_out = self.model(combined_features)
             displacement = self.flow_layer(unet_out)
-        elif self.model_type in {"flowseg", "transflowseg"}:
+        elif self.model_type in {"rasor-cnn", "rasor"}:
             displacement, segmentation = self.model(combined_features)
             res["source_segmentation"] = segmentation
         elif self.model_type == "transmorph2d":
@@ -617,7 +624,7 @@ class WarperVxm(nn.Module):
                     flow_layer.conv0.bias.zero_()
             # Register the flow layer as a submodule
             self.add_module("flow_layer", flow_layer)
-        elif self.model_type == "flowseg":
+        elif self.model_type == "rasor-cnn":
             with torch.no_grad():
                 torch.nn.init.normal_(
                     self.model.out_layer_fwd.conv[0].weight,
@@ -628,7 +635,7 @@ class WarperVxm(nn.Module):
                 if self.model.out_layer_fwd.conv[0].bias is not None:
                     self.model.out_layer_fwd.conv[0].bias.zero_()
 
-        elif self.model_type in {"transflowseg", "transmorph2d"}:
+        elif self.model_type in {"rasor", "transmorph2d"}:
             with torch.no_grad():
                 torch.nn.init.normal_(
                     self.model.reg_head.weight,

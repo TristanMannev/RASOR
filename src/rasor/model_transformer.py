@@ -100,8 +100,8 @@ def upsampling_2conv_blocks(
     return blocks
 
 
-class TransFlowSegUNet(nn.Module):
-    """UNet with SwinTransformer encoder and 2 decoders, one for the source segmentation and one for the flow.
+class RASORUNet(nn.Module):
+    """Transformer-based RASOR network for joint registration and segmentation.
 
     Widely inspired by :
     Chen, Junyu, Eric C. Frey, Yufan He, William P. Segars, Ye Li, and Yong Du.
@@ -118,7 +118,7 @@ class TransFlowSegUNet(nn.Module):
         embed_dim: int = 96,
         reg_head_channels: int = 16,
     ):
-        """Initialize `TransFlowSegUNet`.
+        """Initialize the RASOR U-Net.
 
         Parameters
         ----------
@@ -192,7 +192,7 @@ class TransFlowSegUNet(nn.Module):
         self.seg_head = nn.Conv2d(self.reg_head_channels, self.nb_class_segmentation, kernel_size=1, padding=0)
 
     def forward(self, feature_tensor: torch.Tensor) -> tuple[Any, Any]:
-        """Forward pass through the `TransFlowSegUNet` model."""
+        """Predict a displacement field and segmentation logits."""
         # -------------------------- Downsampling path ----------------------------------------
 
         f4 = self.convrelu1(self.avg_pool(feature_tensor))
@@ -227,6 +227,9 @@ class TransFlowSegUNet(nn.Module):
         feature_tensor_seg = self.seg_head(feature_tensor_seg)
 
         return feature_tensor_fwd, feature_tensor_seg
+
+
+TransFlowSegUNet = RASORUNet
 
 
 class TransMorph2D(nn.Module):

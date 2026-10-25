@@ -13,8 +13,8 @@ import torch
 from skimage.registration import optical_flow_tvl1
 from tqdm import tqdm
 
-from deepfluxoptique.my_utils import image_utils, spatial_transform
-from deepfluxoptique.my_utils.configs import (
+from rasor.my_utils import image_utils, spatial_transform
+from rasor.my_utils.configs import (
     HEIGHT,
     TRAIN_DATA,
     TRAIN_SEG_DATA,

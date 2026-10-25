@@ -20,7 +20,7 @@ import numpy as np
 
 
 video_path = sorted(Path(TEST_DATA).iterdir())
-flow_map_path = Path("outputs/flowseg/output_20260707_103416/results_gap1/flowmaps")
+flow_map_path = Path("outputs/rasor-cnn/output_20260707_103416/results_gap1/flowmaps")
 
 # Load flow maps
 flow_maps = {}

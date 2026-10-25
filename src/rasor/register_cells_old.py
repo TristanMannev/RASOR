@@ -14,9 +14,9 @@ from PIL import Image
 from skimage.registration import optical_flow_tvl1
 
 # Local imports
-from deepfluxoptique.my_utils.configs import device
-from deepfluxoptique.my_utils.image_utils import viz
-from deepfluxoptique.my_utils.spatial_transform import SpatialTransformer
+from rasor.my_utils.configs import device
+from rasor.my_utils.image_utils import viz
+from rasor.my_utils.spatial_transform import SpatialTransformer
 
 
 def register_pair(moving, fixed, model):

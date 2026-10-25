@@ -20,11 +20,11 @@ import tifffile as tiff
 import torch
 
 # Local imports
-from deepfluxoptique.flow_visualizer import FlowVisualizer
-from deepfluxoptique.model import WarperVxm
-from deepfluxoptique.my_utils import configs, image_utils
-from deepfluxoptique.my_utils.spatial_transform import SpatialTransformer
-from deepfluxoptique.register_cells_old import (
+from rasor.flow_visualizer import FlowVisualizer
+from rasor.model import WarperVxm
+from rasor.my_utils import configs, image_utils
+from rasor.my_utils.spatial_transform import SpatialTransformer
+from rasor.register_cells_old import (
     register_pair,
     register_pair_fb,
     register_pair_raft,
@@ -138,7 +138,7 @@ def evaluate_segmentation(segmentation_pred, segmentation_gt, img_moving):
 def create_model(args):
     """Create the model for registration."""
     nb_features = [16, 32, 64, 128, 256]
-    if args.model_type in {"voxelmorph", "flowseg", "twoflows", "transflowseg", "transmorph2d"}:
+    if args.model_type in {"voxelmorph", "rasor-cnn", "rasor", "twoflows", "flowseg", "transflowseg", "transmorph2d"}:
         model = WarperVxm(
             ndim=2,
             source_channels=1,
@@ -179,7 +179,7 @@ def register_video(args):
     global_min, global_max = image_utils.normalisation_params(frames_path_list)
 
     # MLFLOW
-    if args.model_type in {"voxelmorph", "twoflows", "flowseg", "transflowseg", "transmorph2d"}:
+    if args.model_type in {"voxelmorph", "twoflows", "rasor-cnn", "rasor", "flowseg", "transflowseg", "transmorph2d"}:
         with Path(f"{args.output_dir}/config.json").open() as j:
             config = json.load(j)  # To get informations from vxm training
     else:
@@ -223,7 +223,7 @@ def register_video(args):
         moving = image_utils.normalise(moving, global_min, global_max)
         fixed = image_utils.normalise(fixed, global_min, global_max)
         # 3. Compute registration
-        if args.model_type in {"voxelmorph", "flowseg", "twoflows", "transflowseg", "transmorph2d"}:
+        if args.model_type in {"voxelmorph", "rasor-cnn", "rasor", "twoflows", "flowseg", "transflowseg", "transmorph2d"}:
             res = register_pair(moving, fixed, model)
             displacement, fig, input_moving, input_fixed = (
                 res["displacement"],
@@ -269,7 +269,7 @@ def register_video(args):
             if idx == 0:
                 video.append(np.expand_dims(input_moving, axis=-1))  # channel dimension needed for visualization
             video.append(np.expand_dims(input_fixed, axis=-1))  # channel dimension neededfor visualization
-            if args.model_type in {"voxelmorph", "flowseg", "transflowseg", "transmorph2d"}:
+            if args.model_type in {"voxelmorph", "rasor-cnn", "rasor", "flowseg", "transflowseg", "transmorph2d"}:
                 res = register_pair(fixed, moving, model)
                 displacement_bwd = res["displacement"]
             elif args.model_type == "tvl1":
@@ -435,6 +435,8 @@ if __name__ == "__main__":
         choices=[
             "voxelmorph",
             "twoflows",
+            "rasor-cnn",
+            "rasor",
             "flowseg",
             "transflowseg",
             "transmorph2d",
@@ -446,7 +448,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output_dir",
-        default="outputs/flowseg/output_20260904_142224",  # "outputs/flowseg/output_20260720_140401"
+        default="outputs/rasor-cnn/output_20260904_142224",
         help="Directory to find model and to save results",
     )
     parser.add_argument(
